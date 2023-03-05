@@ -1,7 +1,7 @@
 ---
 author: AtaReversei
 pubDatetime: 2023-03-03T17:36:00Z
-title: Book Session 02 - Working With Legacy Code (20-44)
+title: Book Session 02 - Working Effectively With Legacy Code (20-44)
 postSlug: book-session-02
 featured: false
 draft: false
@@ -9,15 +9,150 @@ tags:
   - book summary
   - working effectively with legacy code
 ogImage: ""
-description: We will look into chapter 3 and 4 from the book 'Working With Legacy Code'.
+description: We will look into chapters 3 and 4 from the book 'Working With Legacy Code'.
 ---
 
-## Table of contents
+import challenge01 from "../../assets/blog/book-session02/challenge01.png";
 
-## css
+We will look into chapters 3 and 4 from the book 'Working With Legacy Code' in this session.
+
+---
+
+# Chapter 3: Sensing and Separation
+
+- Sensing: When we can't track the value our code computes.
+- Separation: When we can't fit our code in a local test harness.
+
+The code snippet below has some problems.
 
 ```java
-public static class Student {
-    private string name = 'ata';
+
+// NOTES: NetworkBridge accepts an array of EndPoints and manages their configuration
+// using some local hardware.
+
+public class NetworkBridge {
+ public NetworkBridge(EndPoint [] endpoints) {
+   // do magic
+ }
 }
+```
+
+Because `NetworkBridge` has to deal with hardware we can neither track down what happens to our process in the code for testing purposes nor we can run it separately from the rest of the code. This is a problem in legacy codes that brings us to the next topic.
+
+## Fake Objects
+
+let's warm ourselves up by thinking about solving a common problem.
+
+```java
+// CHALLENGE: How could we properly test the 'Sale' class and ensure that
+// it displays the right thing to the screen.
+
+public class Sale {
+ public void scan(String barcode) {
+  // stuff going on...
+  String itemLine = item.name() + " " + item.price().asDisplayText();
+  this.showLine(itemLine);
+  // stuff still going on...
+ }
+
+ public void showLine(String line) {
+  // logic of displaying on a monitor
+ }
+}
+```
+
+We have to separate our concerns first. `showLine` can be moved to another file to help separate concerns of this code snippet.  
+But now we have another problem. `showLine` is in contact with a hardware which we don't have access to it during testing.
+
+This is where **Fake Objects** play their part. We can introduce an interface which has the method `showLine` and then we can have 2 classes of `FakeDisplay` and `ArtR56Display`. One for business, the other one for testing.  
+Now we can use `FakeDisplay` to see if `Sale` is working correctly or not.
+
+<img src={challenge01} alt="challenge01" />
+
+---
+
+# Chapter 4: The Seam Model
+
+In this chapter we want to break dependencies without changing the behavior very much. These changes happen at points which are called seams.
+
+What is a seam exactly?
+
+> A seam is a place where you can alter behavior in your program without editing in
+> that place.
+
+we have many types of seams:
+
+- Preprocessing Seams
+- Link Seams (Module Seams)
+- Object Seams
+- Function Parameter Seams
+- and more...
+
+But we will discuss the first 3 ones.
+
+## Preprocessing
+
+We can alter the build systems to do specific things based on the environments and flags that we determine.
+
+```javascript
+// not flexible
+const host = "https://setareh.com";
+
+// using preprocessing to make changing environment flexible
+const host = "API_HOST";
+
+// NOTES: We can use text substitution during every build to use different
+// values for "API_HOST"
+
+// Credits: https://bocoup.com/blog/seams-in-javascript
+```
+
+## Link Seams
+
+We can use the power of dynamic importing to import different files to break dependencies of a module to other modules or libraries. We can import the real ones during the production and the mock ones during the testing.
+
+```javascript
+// userUtility.js
+export const isUserViewing = () => {
+  // do ridicules calculations and processing
+  // and add other dependencies to the code
+  return ClientStats.isUserInView;
+};
+```
+
+```javascript
+// userUtility.test.js
+export const isUserViewing = () => {
+  return true;
+};
+```
+
+```javascript
+// main module
+// CHALLENGE: how to dynamically import these files?
+
+// this will be changed to either "" or ".test" by a build system
+const fileName = "FILE_PSEUDO_EXTENSION";
+const { isUserViewing } = await import(`userUtility${fileName}.js`);
+```
+
+## Object Seams
+
+When the behavior you would like to modify is defined as a method on an object, you can over-write the method definition itself, no additional structure necessary:
+
+```javascript
+// NOTES: Although `WeatherMan` may have been written to communicate with some
+// external climate information service, this behavior may be slow, unreliable,
+// or simply unavailable.
+
+WeatherMan.prototype.report = function (callback) {
+  setTimeout(function () {
+    callback("It's darn cold today.");
+  }, 10);
+};
+
+// ...but now *all* "weathermen" will report consistent (albeit
+// disappointing) weather patterns.
+
+// Credits: https://bocoup.com/blog/seams-in-javascript
 ```
