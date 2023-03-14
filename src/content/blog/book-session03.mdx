@@ -1,0 +1,107 @@
+---
+author: AtaReversei
+pubDatetime: 2023-03-12T17:36:00Z
+title: Book Session 03 - Working Effectively With Legacy Code (45-76)
+postSlug: book-session-03
+featured: false
+draft: false
+tags:
+  - book summary
+  - working effectively with legacy code
+ogImage: ""
+description: We will look into chapters 5 and 6 from the book 'Working With Legacy Code'.
+---
+
+We will look into chapters 5 and 6 from the book 'Working With Legacy Code' in this session.
+
+---
+
+# Chapter 5: Tooling
+
+## Unit Testing
+
+Unit testing was first made possible with the production of `xUnit`. Originally it was written in `Smalltalk`, then it was ported to other languages like `C++` and `Java`.  
+There are some unit testing frameworks for `Javascript` too:
+
+- Jest
+- Jasmine
+- Cypress
+- Mocha
+- Storybook
+
+---
+
+# Chapter 6: I Don't Have Much Time And I Have To Change It
+
+## Sprout Model
+
+Pay now or pay more later.  
+Sprout Model implies that we should add the new code as a new function or method.
+
+```javascript
+// Imagine we want to use the postDate method and add the entries that
+// are not present in the bundle.
+
+result = entries.map(entry => {
+  entry.postDate();
+});
+
+transactionBundle = [...transactionBundle, ...result];
+```
+
+We could do it like:
+
+```javascript
+const result = entries
+  .filter(entry => !transactionBundle.includes[entry])
+  .map(entry =>
+    entry.postDate();
+);
+
+transactionBundle = [...transactionBundle, ...result];
+```
+
+But in the scenario above we have mixed the legacy and new code together and we have created even more legacy code.  
+The solution is to add the code as a function and then call it where it is needed:
+
+```javascript
+const entriesToAdd = uniqueEntries(entries);
+
+result = uniqueEntries.map(entry => {
+  entry.postDate();
+});
+
+transactionBundle = [...transactionBundle, ...result];
+```
+
+## Wrap Method
+
+Imagine we have a function like:
+
+```javascript
+const pay = () => {
+  // functionality blah blah
+};
+```
+
+And we need to add a feature in which we log the data to be used later. And that on feature happens at the very same time as the `pay` function. One way is to add the feature right into the `pay` function but this is called `temporal coupling` and is very awful. One other way is to use `wrap method`:
+
+```javascript {1}
+const pay = () => {
+  dispatchPay();
+  logPay();
+};
+
+const dispatchPay = () => {
+  // functionality blah blah
+};
+
+const logPay = () => {
+  // log log log Zzz...
+};
+```
+
+This technique has 2 issues:
+
+- The new logic cannot be mixed with the old logic
+- It results in bad names for variables and functions

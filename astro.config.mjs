@@ -12,7 +12,7 @@ import mdx from "@astrojs/mdx";
 export default defineConfig({
   site: "https://atareversei.github.io",
   base: "/presenting",
-  output: "server",
+  output: "static",
   integrations: [
     tailwind({
       config: {
