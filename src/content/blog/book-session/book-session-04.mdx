@@ -1,0 +1,124 @@
+---
+author: AtaReversei
+pubDatetime: 2023-04-02T14:23:00Z
+title: Book Session 04 - Working Effectively With Legacy Code (77-104)
+postSlug: book-session-04
+featured: false
+draft: false
+tags:
+  - book summary
+  - working effectively with legacy code
+ogImage: ""
+description: We will look into chapters 7 and 8 from the book 'Working With Legacy Code'.
+---
+
+We will look into chapters 7 and 8 from the book 'Working With Legacy Code' in this session.
+
+---
+
+# Chapter 7: It Takes Forever To Make A Change
+
+## Lag Time
+
+Changes often take a long time for another very common reason: lag time. Lag
+time is the amount of time that passes between a change that you make and the
+moment that you get real feedback about the change. At the time of this writ-
+ing, the Mars rover Spirit is crawling across the surface of Mars taking pictures.
+It takes about seven minutes for signals to get from Earth to Mars. Luckily,
+Spirit has some onboard guidance software that helps it move around on its
+own. Imagine what it would be like to drive it manually from Earth.
+
+## How to lessen the lag time?
+
+We can reduce the amount of lag time with unit testing. Unit testings should happen quickly and give us feedback in few seconds. To be able to do unit testing some techniques have been introduced before. Like sprout methods or classes or breaking dependencies with defining an interface where things get very intertwined.
+
+# Chapter 8: How Do I Add A Feature?
+
+## TDD
+
+We can use TDD to add a feature in legacy code for the reason below:
+
+> One of the most valuable things about TDD is that it lets us concentrate on one thing
+> at a time. We are either writing code or refactoring; we are never doing both at once.
+> That separation is particularly valuable in legacy code because it lets us write new
+> code independently of new code.
+> After we have written some new code, we can refactor to remove any duplication
+> between it and the old code.
+
+To do so we do:
+
+1. Get the class you want to change under test.
+2. Write a failing test case.
+3. Get it to compile.
+4. Make it pass. (Try not to change existing code as you do this.)
+5. Remove duplication.
+6. Repeat.
+
+## Programming by Difference
+
+The key technique for doing this is something called programming by difference. It is a rather old technique that was discussed and used quite a bit in the
+1980s, but it fell out of favor in the 1990s when many people in the OO community noticed that inheritance can be rather problematic if it is overused. But
+just because we use inheritance initially doesn’t mean that we have to keep it in
+place.
+
+---
+
+let's learn it with an example:
+
+```java
+// This method below is part of MailForwarder Class
+private InternetAddress getFromAddress(Message message)
+throws MessagingException {
+  Address [] from = message.getFrom ();
+  if (from != null && from.length > 0) {
+    return new InternetAddress (from [0].toString ());
+  }
+  return new InternetAddress (getDefaultFrom());
+}
+```
+
+```java
+// getFromAddress usage
+MimeMessage forward = new MimeMessage (session);
+forward.setFrom (getFromAddress (message));
+```
+
+---
+
+The snippet above is doing its work fine. But what if we want to support the anonymous forwards? Here it is the test for such functionality:
+
+```java
+public void testAnonymous () throws Exception {
+  MessageForwarder forwarder = new MessageForwarder();
+  forwarder.forwardMessage (makeFakeMessage());
+  assertEquals ("anon-members@" + forwarder.getDomain(),
+  expectedMessage.getFrom ()[0].toString());
+}
+```
+
+But we don't want to change the legacy class so we subclass the main class and test that:
+
+```java
+public void testAnonymous () throws Exception {
+  MessageForwarder forwarder = new AnonymousMessageForwarder();
+  forwarder.forwardMessage (makeFakeMessage());
+  assertEquals ("anon-members@" + forwarder.getDomain(),
+  expectedMessage.getFrom ()[0].toString());
+}
+```
+
+And to pass the test:
+
+```java
+protected InternetAddress getFromAddress(Message message)
+throws MessagingException {
+  String anonymousAddress = "anon-" + listAddress;
+  return new InternetAddress(anonymousAddress);
+}
+```
+
+---
+
+That almost seemed too easy. What’s the issue? Well, here it is: If we use this
+technique repeatedly and we don’t pay attention to some key aspects of our
+design, it starts to degrade rapidly.
