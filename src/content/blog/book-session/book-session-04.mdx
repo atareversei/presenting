@@ -122,3 +122,37 @@ throws MessagingException {
 That almost seemed too easy. What’s the issue? Well, here it is: If we use this
 technique repeatedly and we don’t pay attention to some key aspects of our
 design, it starts to degrade rapidly.
+
+Now Imagine we want to add a new `OffTheList` type of forwarder. Do we have to add another subclass?
+
+We can use configuration objects like...
+
+```java
+Properties configuration = new Properties();
+configuration.setProperty("anonymous", "true");
+MessageForwarder forwarder = new MessageForwarder(configuration);
+```
+
+...and we can decide what happens in the method like code snippet below...
+
+```java
+private InternetAddress getFromAddress(Message message)
+throws MessagingException {
+  String fromAddress = getDefaultFrom();
+  if (configuration.getProperty("anonymous").equals("true")) {
+    fromAddress = "anon-members@" + domain;
+  }
+  else {
+    Address [] from = message.getFrom ();
+    if (from != null && from.length > 0)
+      fromAddress = from [0].toString ();
+  }
+}
+```
+
+But this will result in violating `Single
+Responsibility Principle` and will make our code larger and unreadable in long time.
+
+To solve this problem we can move all the methods related to forwarding into a new class.
+
+---
